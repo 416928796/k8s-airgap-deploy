@@ -1,0 +1,21 @@
+# Mayastor 单副本 StorageClass
+# 适用于测试环境或数据可靠性要求不高的场景
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: mayastor-single-replica
+provisioner: io.openebs.csi-mayastor
+parameters:
+  # 协议：nvmf（NVMe over Fabrics）
+  protocol: nvmf
+  # 副本数：1
+  repl: "1"
+  # 指定使用哪个 DiskPool
+  # 如果只有一个 pool，直接写 pool 名称
+  pool: "pool-node1"
+  # 是否薄置备
+  thin: "true"
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete

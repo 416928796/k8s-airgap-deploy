@@ -1,0 +1,36 @@
+# Mayastor DiskPool 示例
+# 每个运行 io-engine 的节点都需要一个 DiskPool
+# 请确保 disks 列表中的磁盘是未分区、未挂载的裸盘！
+
+---
+apiVersion: io.openebs.storage/v1beta2
+kind: DiskPool
+metadata:
+  name: pool-node1
+  namespace: openebs
+spec:
+  node: k8s-node1   # 替换为实际节点名称
+  disks:
+    - /dev/nvme0n1  # 替换为实际裸盘设备名
+
+---
+apiVersion: io.openebs.storage/v1beta2
+kind: DiskPool
+metadata:
+  name: pool-node2
+  namespace: openebs
+spec:
+  node: k8s-node2
+  disks:
+    - /dev/nvme0n1
+
+---
+apiVersion: io.openebs.storage/v1beta2
+kind: DiskPool
+metadata:
+  name: pool-node3
+  namespace: openebs
+spec:
+  node: k8s-node3
+  disks:
+    - /dev/nvme0n1

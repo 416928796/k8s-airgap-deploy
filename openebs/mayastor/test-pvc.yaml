@@ -1,0 +1,14 @@
+# Mayastor 测试 PVC
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mayastor-test-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: mayastor-single-replica
+  resources:
+    requests:
+      storage: 5Gi

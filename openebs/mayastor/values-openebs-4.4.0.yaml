@@ -1,0 +1,45 @@
+# OpenEBS 4.4.0 umbrella chart values overlay
+# 目标：重新部署完整 OpenEBS，并启用 Mayastor 2.10.0
+
+# 不是 v3->v4 升级，关闭 pre-upgrade hook 避免运行不必要的 Job
+preUpgradeHook:
+  enabled: false
+
+# 启用的存储引擎
+engines:
+  local:
+    lvm:
+      enabled: true
+    zfs:
+      enabled: true
+    rawfile:
+      # rawfile 尚未 stable，保持默认关闭
+      enabled: false
+  replicated:
+    mayastor:
+      # 本次核心目标：启用 Mayastor 2.10.0
+      enabled: true
+
+# Mayastor 子 chart 配置
+mayastor:
+  csi:
+    node:
+      initContainers:
+        enabled: true
+  # 以下组件已由 umbrella chart 独立提供，关闭 Mayastor 子 chart 中的重复份
+  localpv-provisioner:
+    enabled: false
+  crds:
+    enabled: false
+  loki:
+    enabled: false
+  alloy:
+    enabled: false
+
+# 保留 umbrella 提供的日志栈
+loki:
+  enabled: true
+
+# 保留 umbrella 提供的日志收集
+alloy:
+  enabled: true

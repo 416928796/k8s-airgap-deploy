@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openebs-test
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-pvc
+  namespace: openebs-test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # 根据你实际的 StorageClass 名称修改下面这行
+  # 常见名称: openebs-hostpath, openebs-jiva-csi-default, openebs-cstor-csi
+  storageClassName: openebs-hostpath
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+  namespace: openebs-test
+spec:
+  containers:
+    - name: test
+      image: busybox:latest
+      command: ["/bin/sh", "-c", "sleep 3600"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: test-pvc
