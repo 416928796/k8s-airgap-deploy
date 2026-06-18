@@ -1,9 +1,12 @@
 # Mayastor DiskPool 示例
 # 每个运行 io-engine 的节点都需要一个 DiskPool
 # 请确保 disks 列表中的磁盘是未分区、未挂载的裸盘！
+# 注意：Mayastor 4.x 要求使用持久化设备路径（by-id），不能直接用 /dev/nvme0n1
+# 在每个节点上执行：ls -l /dev/disk/by-id/ | grep nvme
+# 然后用 aio:///dev/disk/by-id/<id> 格式填写
 
 ---
-apiVersion: io.openebs.storage/v1beta2
+apiVersion: openebs.io/v1beta3
 kind: DiskPool
 metadata:
   name: pool-master
@@ -11,10 +14,10 @@ metadata:
 spec:
   node: k8s-master-01
   disks:
-    - /dev/nvme0n1
+    - aio:///dev/disk/by-id/nvme-eui.ba20bc00a14c2c01
 
 ---
-apiVersion: io.openebs.storage/v1beta2
+apiVersion: openebs.io/v1beta3
 kind: DiskPool
 metadata:
   name: pool-worker-01
@@ -22,10 +25,10 @@ metadata:
 spec:
   node: k8s-worker-01
   disks:
-    - /dev/nvme0n1
+    - aio:///dev/disk/by-id/nvme-eui.ba20bc00a1540e01
 
 ---
-apiVersion: io.openebs.storage/v1beta2
+apiVersion: openebs.io/v1beta3
 kind: DiskPool
 metadata:
   name: pool-worker-02
@@ -33,4 +36,4 @@ metadata:
 spec:
   node: k8s-worker-02
   disks:
-    - /dev/nvme0n1
+    - aio:///dev/disk/by-id/nvme-eui.ba20bc00a14c3f01
