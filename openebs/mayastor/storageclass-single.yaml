@@ -13,7 +13,7 @@ parameters:
   repl: "1"
   # 指定使用哪个 DiskPool
   # 如果只有一个 pool，直接写 pool 名称
-  pool: "pool-node1"
+  pool: "pool-master"
   # 是否薄置备
   thin: "true"
 allowVolumeExpansion: true

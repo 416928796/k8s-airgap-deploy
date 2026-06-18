@@ -1,0 +1,17 @@
+# Mayastor 两副本 StorageClass
+# 可容忍 1 节点故障（无仲裁），可用容量 7T
+# 适用于开发环境或对数据可靠性要求中等的场景
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: mayastor-double-replica
+provisioner: io.openebs.csi-mayastor
+parameters:
+  protocol: nvmf
+  repl: "2"
+  thin: "true"
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+ 

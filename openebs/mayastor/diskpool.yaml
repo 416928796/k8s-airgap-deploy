@@ -6,21 +6,10 @@
 apiVersion: io.openebs.storage/v1beta2
 kind: DiskPool
 metadata:
-  name: pool-node1
+  name: pool-master
   namespace: openebs
 spec:
-  node: k8s-node1   # 替换为实际节点名称
-  disks:
-    - /dev/nvme0n1  # 替换为实际裸盘设备名
-
----
-apiVersion: io.openebs.storage/v1beta2
-kind: DiskPool
-metadata:
-  name: pool-node2
-  namespace: openebs
-spec:
-  node: k8s-node2
+  node: k8s-master-01
   disks:
     - /dev/nvme0n1
 
@@ -28,9 +17,20 @@ spec:
 apiVersion: io.openebs.storage/v1beta2
 kind: DiskPool
 metadata:
-  name: pool-node3
+  name: pool-worker-01
   namespace: openebs
 spec:
-  node: k8s-node3
+  node: k8s-worker-01
+  disks:
+    - /dev/nvme0n1
+
+---
+apiVersion: io.openebs.storage/v1beta2
+kind: DiskPool
+metadata:
+  name: pool-worker-02
+  namespace: openebs
+spec:
+  node: k8s-worker-02
   disks:
     - /dev/nvme0n1
