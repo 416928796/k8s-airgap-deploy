@@ -1,0 +1,51 @@
+# Mayastor DiskPool 示例
+# 每个运行 io-engine 的节点都需要一个 DiskPool
+# 请确保 disks 列表中的磁盘是未分区、未挂载的裸盘！
+# 注意：Mayastor 4.x 要求使用持久化设备路径（by-id），不能直接用 /dev/nvme0n1
+# 在每个节点上执行：ls -l /dev/disk/by-id/ | grep nvme
+# 然后用 aio:///dev/disk/by-id/<id> 格式填写
+#
+# topology.labelled.diskType: nvme 用于 StorageClass 的池选择器
+# 确保与 HDD 存储池完全隔离
+
+---
+apiVersion: openebs.io/v1beta3
+kind: DiskPool
+metadata:
+  name: pool-master
+  namespace: openebs
+spec:
+  node: k8s-master-01
+  disks:
+    - aio:///dev/disk/by-id/nvme-eui.ba20bc00a14c2c01
+  topology:
+    labelled:
+      diskType: nvme
+
+---
+apiVersion: openebs.io/v1beta3
+kind: DiskPool
+metadata:
+  name: pool-worker-01
+  namespace: openebs
+spec:
+  node: k8s-worker-01
+  disks:
+    - aio:///dev/disk/by-id/nvme-eui.ba20bc00a1540e01
+  topology:
+    labelled:
+      diskType: nvme
+
+---
+apiVersion: openebs.io/v1beta3
+kind: DiskPool
+metadata:
+  name: pool-worker-02
+  namespace: openebs
+spec:
+  node: k8s-worker-02
+  disks:
+    - aio:///dev/disk/by-id/nvme-eui.ba20bc00a14c3f01
+  topology:
+    labelled:
+      diskType: nvme

@@ -1,0 +1,29 @@
+# Mayastor HDD 机械硬盘 三副本 StorageClass
+# 适用于大容量、对延迟要求不高但对数据可靠性要求高的场景
+# 如：日志存储、备份归档、媒体文件、冷数据等
+#
+# 关键参数说明：
+#   poolAffinityTopologyLabel: 仅选择带有 diskType: hdd 标签的 DiskPool
+#   repl: "3" 三副本冗余，可容忍 2 节点故障
+#   thin: "true" 薄置备，适合 HDD 大容量场景
+#   fsType: xfs 推荐使用 xfs，HDD 上性能优于 ext4
+#
+# 隔离机制：
+#   通过 topology 标签确保 HDD StorageClass 只使用 HDD 池
+#   NVMe StorageClass 只使用 NVMe 池，互不干扰
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: mayastor-hdd-triple-replica
+provisioner: io.openebs.csi-mayastor
+parameters:
+  protocol: nvmf
+  repl: "3"
+  thin: "true"
+  fsType: xfs
+  poolAffinityTopologyLabel: |
+    diskType: hdd
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete

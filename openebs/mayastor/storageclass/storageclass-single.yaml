@@ -1,0 +1,24 @@
+# Mayastor 单副本 StorageClass（NVMe 专用）
+# 适用于测试环境或数据可靠性要求不高的场景
+#
+# poolAffinityTopologyLabel 确保此 SC 仅使用 diskType=nvme 的 DiskPool
+# 与 HDD 存储池完全隔离
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: mayastor-single-replica
+provisioner: io.openebs.csi-mayastor
+parameters:
+  # 协议：nvmf（NVMe over Fabrics）
+  protocol: nvmf
+  # 副本数：1
+  repl: "1"
+  # 通过 topology 标签限制只使用 NVMe 存储池
+  poolAffinityTopologyLabel: |
+    diskType: nvme
+  # 是否薄置备
+  thin: "true"
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete

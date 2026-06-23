@@ -1,0 +1,20 @@
+# Mayastor 三副本 StorageClass（NVMe 专用）
+# 生产环境推荐，需要至少 3 个 Online 的 NVMe DiskPool
+#
+# poolAffinityTopologyLabel 确保此 SC 仅使用 diskType=nvme 的 DiskPool
+# 与 HDD 存储池完全隔离，避免 NVMe 性能被拖慢
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: mayastor-triple-replica
+provisioner: io.openebs.csi-mayastor
+parameters:
+  protocol: nvmf
+  repl: "3"
+  thin: "true"
+  poolAffinityTopologyLabel: |
+    diskType: nvme
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete

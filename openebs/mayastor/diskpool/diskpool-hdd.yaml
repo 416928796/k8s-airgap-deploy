@@ -1,0 +1,58 @@
+# HDD 机械硬盘 DiskPool
+# 用于创建独立于 NVMe 的机械硬盘存储池
+#
+# 前置步骤（在每个节点上执行）：
+#   1. 确认可用裸盘：lsblk -dpno NAME,SIZE,TYPE,MOUNTPOINT,MODEL | grep -v nvme
+#   2. 获取持久化设备路径：ls -l /dev/disk/by-id/ | grep -v nvme | grep -v part
+#   3. 确认磁盘未分区、未挂载、未加入 LVM/RAID
+#
+# 注意事项：
+#   - 每个节点至少需要 1 块 HDD 裸盘才能创建 3 副本存储池
+#   - 磁盘会被 Mayastor 接管并格式化，数据会丢失！
+#   - 请将下面的磁盘路径替换为你环境中实际的 HDD by-id 路径
+#   - topology.labelled.diskType: hdd 用于 StorageClass 的池选择器
+
+---
+apiVersion: openebs.io/v1beta3
+kind: DiskPool
+metadata:
+  name: pool-hdd-master
+  namespace: openebs
+spec:
+  node: k8s-master-01
+  disks:
+    # 替换为实际 HDD 的 by-id 路径，可添加多块盘
+    - aio:///dev/disk/by-id/ata-WDC_WDXXXXXX-XXXXXXX_XXXXXXXX
+  topology:
+    labelled:
+      diskType: hdd
+
+---
+apiVersion: openebs.io/v1beta3
+kind: DiskPool
+metadata:
+  name: pool-hdd-worker-01
+  namespace: openebs
+spec:
+  node: k8s-worker-01
+  disks:
+    # 替换为实际 HDD 的 by-id 路径，可添加多块盘
+    - aio:///dev/disk/by-id/ata-WDC_WDXXXXXX-XXXXXXX_XXXXXXXX
+  topology:
+    labelled:
+      diskType: hdd
+
+---
+apiVersion: openebs.io/v1beta3
+kind: DiskPool
+metadata:
+  name: pool-hdd-worker-02
+  namespace: openebs
+spec:
+  node: k8s-worker-02
+  disks:
+    # 替换为实际 HDD 的 by-id 路径，可添加多块盘
+    - aio:///dev/disk/by-id/ata-WDC_WDXXXXXX-XXXXXXX_XXXXXXXX
+  topology:
+    labelled:
+      diskType: hdd

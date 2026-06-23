@@ -1,0 +1,22 @@
+# Mayastor 两副本 StorageClass（NVMe 专用）
+# 可容忍 1 节点故障（无仲裁）
+# 适用于开发环境或对数据可靠性要求中等的场景
+#
+# poolAffinityTopologyLabel 确保此 SC 仅使用 diskType=nvme 的 DiskPool
+# 与 HDD 存储池完全隔离，避免 NVMe 性能被拖慢
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: mayastor-double-replica
+provisioner: io.openebs.csi-mayastor
+parameters:
+  protocol: nvmf
+  repl: "2"
+  thin: "true"
+  poolAffinityTopologyLabel: |
+    diskType: nvme
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+ 
