@@ -1,0 +1,160 @@
+# pgbench 基准测试 Job
+# 依次对 Mayastor 和 LocalPath 两个 PG 实例执行全套性能测试
+#
+# 使用方法：
+#   kubectl apply -f pgbench-job.yaml
+#
+# 前置条件：
+#   1. pg-mayastor 和 pg-localpath namespace 中的 PG 实例已部署并就绪
+#   2. 镜像 172.25.128.67:9003/bitnami/postgresql 已推送到私有仓库
+#
+# 测试结果输出到 Pod 日志，可通过以下命令查看：
+#   kubectl logs job/pgbench-benchmark -n pg-mayastor
+#
+# 测试矩阵（每实例 8 场景）：
+#   A. 只读吞吐量        -S -c 10 -j 2 -T 60
+#   B. 读写混合吞吐量      -c 10 -j 2 -T 60
+#   C. 写入压力           -N -c 10 -j 2 -T 60
+#   D. 单客户端延迟        -c 1 -j 1 -T 60 -l
+#   E. 并发10            -c 10 -j 2 -T 60
+#   F. 并发50            -c 50 -j 4 -T 60
+#   G. 并发100           -c 100 -j 4 -T 60
+#   H. 持续稳定性         -c 50 -j 4 -T 300
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pgbench-benchmark
+  namespace: pg-mayastor
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pgbench
+          image: 172.25.128.67:9003/bitnami/postgresql:latest
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              #!/bin/bash
+              set -e
+
+              # ===== 配置区 =====
+              PG_PASSWORD="benchmark123"
+              PG_DATABASE="benchmark"
+              SCALE_FACTOR=100
+              WARMUP_DURATION=10
+
+              # Mayastor 实例连接信息
+              MAYASTOR_HOST="pg-mayastor-postgresql.pg-mayastor.svc.cluster.local"
+              MAYASTOR_PORT="5432"
+
+              # LocalPath 实例连接信息
+              LOCALPATH_HOST="pg-localpath-postgresql.pg-localpath.svc.cluster.local"
+              LOCALPATH_PORT="5432"
+
+              export PGPASSWORD="${PG_PASSWORD}"
+
+              # ===== 工具函数 =====
+              log() {
+                echo ""
+                echo "=============================================="
+                echo "  $1"
+                echo "  时间: $(date '+%Y-%m-%d %H:%M:%S')"
+                echo "=============================================="
+              }
+
+              # 执行单个 pgbench 测试场景
+              # 参数: $1=实例标签 $2=host $3=port $4=场景名 $5...=pgbench参数
+              run_test() {
+                local label="$1"
+                local host="$2"
+                local port="$3"
+                local scenario="$4"
+                shift 4
+                local args="$*"
+
+                echo ""
+                echo "[$label] 场景 $scenario: pgbench $args"
+                echo "------------------------------------------------"
+
+                # 预热
+                echo "  预热中 (${WARMUP_DURATION}s)..."
+                pgbench -h "${host}" -p "${port}" -U postgres -d "${PG_DATABASE}" \
+                  -c 10 -j 2 -T "${WARMUP_DURATION}" >/dev/null 2>&1 || true
+
+                # 正式测试
+                echo "  正式测试..."
+                pgbench -h "${host}" -p "${port}" -U postgres -d "${PG_DATABASE}" \
+                  --aggregate-interval=1 ${args} 2>&1
+
+                echo "------------------------------------------------"
+              }
+
+              # ===== 1. 数据初始化 =====
+              log "数据初始化 - Mayastor"
+              echo "pgbench -i -s ${SCALE_FACTOR} -> ${MAYASTOR_HOST}"
+              START_TIME=$(date +%s)
+              pgbench -i -s "${SCALE_FACTOR}" -h "${MAYASTOR_HOST}" -p "${MAYASTOR_PORT}" \
+                -U postgres -d "${PG_DATABASE}" 2>&1
+              MAYASTOR_INIT_TIME=$(($(date +%s) - START_TIME))
+              echo "Mayastor 初始化耗时: ${MAYASTOR_INIT_TIME}s"
+
+              log "数据初始化 - LocalPath"
+              echo "pgbench -i -s ${SCALE_FACTOR} -> ${LOCALPATH_HOST}"
+              START_TIME=$(date +%s)
+              pgbench -i -s "${SCALE_FACTOR}" -h "${LOCALPATH_HOST}" -p "${LOCALPATH_PORT}" \
+                -U postgres -d "${PG_DATABASE}" 2>&1
+              LOCALPATH_INIT_TIME=$(($(date +%s) - START_TIME))
+              echo "LocalPath 初始化耗时: ${LOCALPATH_INIT_TIME}s"
+
+              # ===== 2. 执行测试矩阵 =====
+              # 场景定义数组
+              SCENARIOS=(
+                "A_只读吞吐量:-S -c 10 -j 2 -T 60"
+                "B_读写混合吞吐量:-c 10 -j 2 -T 60"
+                "C_写入压力:-N -c 10 -j 2 -T 60"
+                "D_单客户端延迟:-c 1 -j 1 -T 60 -l"
+                "E_并发10:-c 10 -j 2 -T 60"
+                "F_并发50:-c 50 -j 4 -T 60"
+                "G_并发100:-c 100 -j 4 -T 60"
+                "H_持续稳定性:-c 50 -j 4 -T 300"
+              )
+
+              # Mayastor 测试
+              log "Mayastor 实例 - 开始基准测试"
+              for scenario_def in "${SCENARIOS[@]}"; do
+                scenario_name="${scenario_def%%:*}"
+                scenario_args="${scenario_def#*:}"
+                run_test "Mayastor" "${MAYASTOR_HOST}" "${MAYASTOR_PORT}" \
+                  "${scenario_name}" ${scenario_args}
+              done
+
+              # LocalPath 测试
+              log "LocalPath 实例 - 开始基准测试"
+              for scenario_def in "${SCENARIOS[@]}"; do
+                scenario_name="${scenario_def%%:*}"
+                scenario_args="${scenario_def#*:}"
+                run_test "LocalPath" "${LOCALPATH_HOST}" "${LOCALPATH_PORT}" \
+                  "${scenario_name}" ${scenario_args}
+              done
+
+              # ===== 3. 汇总输出 =====
+              log "测试完成 - 结果汇总"
+              echo "初始化耗时对比："
+              echo "  Mayastor:  ${MAYASTOR_INIT_TIME}s"
+              echo "  LocalPath: ${LOCALPATH_INIT_TIME}s"
+              echo ""
+              echo "详细数据请查看上方各场景的 pgbench 输出。"
+              echo "请将结果复制到 REPORT.md 中进行分析。"
+          env:
+            - name: PGPASSWORD
+              value: "benchmark123"
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"

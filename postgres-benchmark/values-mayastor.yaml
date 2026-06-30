@@ -1,0 +1,67 @@
+# Mayastor 版 PostgreSQL Helm values
+# 使用 mayastor-double-replica StorageClass（NVMe 双副本）
+#
+# 部署命令：
+#   helm install pg-mayastor ./charts/postgresql-18.7.5.tgz \
+#     -f values-mayastor.yaml -n pg-mayastor --create-namespace
+#
+# 前置条件：
+#   1. mayastor-double-replica StorageClass 已部署
+#   2. NVMe DiskPool 有足够容量（≥ 40Gi，20Gi × 2 副本）
+#   3. 镜像 172.25.128.67:9003/bitnami/postgresql:latest 已推送
+
+global:
+  imageRegistry: "172.25.128.67:9003"
+  security:
+    allowInsecureImages: true
+
+# 单实例模式（无主从复制，聚焦存储性能对比）
+architecture: standalone
+
+# 镜像配置（registry 由 global.imageRegistry 覆盖）
+image:
+  repository: bitnami/postgresql
+  # tag 留空，使用 chart 默认 appVersion（18.4.0）
+
+# 认证配置
+auth:
+  postgresPassword: "benchmark123"
+  database: "benchmark"
+
+# 主节点配置
+primary:
+  # 持久化存储 —— 核心差异点
+  persistence:
+    enabled: true
+    storageClass: "mayastor-double-replica"
+    size: 20Gi
+    accessModes:
+      - ReadWriteOnce
+
+  # 资源限制（确保公平对比，与 LocalPath 版完全一致）
+  resources:
+    requests:
+      cpu: "2"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+
+  # 自定义 postgresql.conf 参数（两实例完全一致）
+  # 针对存储性能测试优化，确保 PG 层不成为瓶颈
+  configuration: |
+    shared_buffers = 512MB
+    max_connections = 200
+    random_page_cost = 1.1
+    effective_cache_size = 1GB
+    work_mem = 16MB
+    maintenance_work_mem = 256MB
+    wal_buffers = 16MB
+    max_wal_size = 1GB
+    synchronous_commit = on
+
+# 禁用不需要的组件（减少干扰变量）
+volumePermissions:
+  enabled: false
+metrics:
+  enabled: false

@@ -1,0 +1,61 @@
+# LocalPath 版 PostgreSQL Helm values
+# 使用 openebs-hostpath StorageClass（本地路径存储）
+# 唯一差异：storageClass 与 Mayastor 版不同，其余参数完全一致
+# 部署命令：
+#   helm install pg-localpath ./charts/postgresql-18.7.5.tgz \
+#     -f values-localpath.yaml -n pg-localpath --create-namespace
+
+global:
+  imageRegistry: "172.25.128.67:9003"
+  security:
+    allowInsecureImages: true
+
+# 单实例模式（无主从复制，聚焦存储性能对比）
+architecture: standalone
+
+# 镜像配置（registry 由 global.imageRegistry 覆盖）
+image:
+  repository: bitnami/postgresql
+  # tag 留空，使用 chart 默认 appVersion（18.4.0）
+
+# 认证配置
+auth:
+  postgresPassword: "benchmark123"
+  database: "benchmark"
+
+# 主节点配置
+primary:
+  # 持久化存储 —— 核心差异点
+  persistence:
+    enabled: true
+    storageClass: "openebs-hostpath"    # ← 唯一差异：LocalPath 存储
+    size: 20Gi
+    accessModes:
+      - ReadWriteOnce
+
+  # 资源限制（确保公平对比，与 Mayastor 版完全一致）
+  resources:
+    requests:
+      cpu: "2"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+
+  # 自定义 postgresql.conf 参数（两实例完全一致）
+  configuration: |
+    shared_buffers = 512MB
+    max_connections = 200
+    random_page_cost = 1.1
+    effective_cache_size = 1GB
+    work_mem = 16MB
+    maintenance_work_mem = 256MB
+    wal_buffers = 16MB
+    max_wal_size = 1GB
+    synchronous_commit = on
+
+# 禁用不需要的组件
+volumePermissions:
+  enabled: false
+metrics:
+  enabled: false

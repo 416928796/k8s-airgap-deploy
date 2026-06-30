@@ -1,0 +1,15 @@
+# PostgreSQL 基准测试所需镜像清单
+# 由 prepare.sh 自动生成
+# chart 版本: 18.7.5
+# PostgreSQL appVersion: 18.4.0
+# 生成时间: 2026-06-23 14:29:13
+#
+# 使用方法：参考 README.md 第六章内网资源导入指南
+
+# ===== 必需镜像 =====
+# 注意：当前 Bitnami PostgreSQL 18.4.0 使用 latest 标签
+docker.io/bitnami/postgresql:latest
+
+# ===== 可选镜像（默认禁用，按需启用） =====
+# docker.io/bitnami/os-shell:latest              # volumePermissions.enabled=true 时需要
+# docker.io/bitnami/postgres-exporter:latest     # metrics.enabled=true 时需要

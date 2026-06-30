@@ -1,9 +1,14 @@
 # 容器镜像 blob 文件（哈希命名的大文件）
 openebs/mayastor/mayastor-images/
 openebs/localpath/busybox-dir/
+postgres-benchmark/images/postgresql-latest/
+postgres-benchmark/pg-images/
 
 # 大型压缩包（镜像离线包，体积过大）
 openebs/mayastor.zip
+
+# IDE 配置
+.idea/
 
 # 临时文件
 *.tmp
